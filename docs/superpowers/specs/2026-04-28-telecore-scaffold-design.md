@@ -95,7 +95,7 @@ A meta deste documento é descrever o **scaffold inicial** — sem regras de dom
 6. **Smoke test manual:**
    - `mix phx.server` → `localhost:4000`.
    - Cadastrar usuário em `/users/register` (browser).
-   - `curl -X POST localhost:4000/api/v1/sessions -H "Content-Type: application/json" -d '{"email":"...","password":"..."}'` → 200 com token.
+   - `curl -X POST localhost:4000/api/v1/sessions -H "Content-Type: application/json" -d '{"email":"...","password":"..."}'` → 201 com token.
    - `curl -H "Authorization: Bearer <token>" localhost:4000/api/v1/users/me` → 200 com user.
 
 ## Estrutura de commits
