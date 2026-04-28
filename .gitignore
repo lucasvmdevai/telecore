@@ -35,3 +35,6 @@ telecore-*.tar
 npm-debug.log
 /assets/node_modules/
 
+
+# Claude Code local config
+.claude/
