@@ -11,7 +11,13 @@ defmodule Telecore.MixProject do
       aliases: aliases(),
       deps: deps(),
       compilers: [:phoenix_live_view] ++ Mix.compilers(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      dialyzer: [
+        plt_local_path: "priv/plts/local.plt",
+        plt_core_path: "priv/plts/core.plt",
+        flags: [:error_handling, :unknown, :unmatched_returns],
+        ignore_warnings: ".dialyzer_ignore.exs"
+      ]
     ]
   end
 
@@ -66,7 +72,11 @@ defmodule Telecore.MixProject do
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      {:ex_machina, "~> 2.7", only: :test},
+      {:mox, "~> 1.1", only: :test}
     ]
   end
 
