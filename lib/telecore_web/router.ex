@@ -17,6 +17,11 @@ defmodule TelecoreWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :api_authenticated do
+    plug :accepts, ["json"]
+    plug TelecoreWeb.Plugs.ApiAuth
+  end
+
   scope "/", TelecoreWeb do
     pipe_through :browser
 
@@ -71,5 +76,24 @@ defmodule TelecoreWeb.Router do
 
     post "/users/log-in", UserSessionController, :create
     delete "/users/log-out", UserSessionController, :delete
+  end
+
+  # JSON API — public (no auth required).
+  # New endpoints that DO need auth go in the :api_authenticated scope below.
+  scope "/api/v1", TelecoreWeb.Api.V1 do
+    pipe_through :api
+
+    post "/sessions", SessionController, :create
+    post "/users", UserController, :create
+  end
+
+  # JSON API — Bearer-token authenticated.
+  # The :api_authenticated pipeline runs TelecoreWeb.Plugs.ApiAuth which
+  # halts with 401 if the request lacks a valid `Authorization: Bearer <token>`.
+  scope "/api/v1", TelecoreWeb.Api.V1 do
+    pipe_through :api_authenticated
+
+    delete "/sessions", SessionController, :delete
+    get "/users/me", UserController, :me
   end
 end

@@ -155,4 +155,66 @@ defmodule Telecore.Accounts.UserToken do
   defp by_token_and_context_query(token, context) do
     from UserToken, where: [token: ^token, context: ^context]
   end
+
+  @api_token_validity_in_days 60
+
+  @doc """
+  Generates an opaque Bearer token for API auth.
+
+  Returns `{plaintext_token, %UserToken{}}`. The plaintext is shown to the
+  client exactly once; only the hash is persisted.
+  """
+  def build_api_token(user) do
+    token = :crypto.strong_rand_bytes(@rand_size)
+    hashed = :crypto.hash(@hash_algorithm, token)
+
+    {Base.url_encode64(token, padding: false),
+     %UserToken{
+       token: hashed,
+       context: "api",
+       user_id: user.id
+     }}
+  end
+
+  @doc """
+  Returns the query that fetches the user owning a given API token, or `nil`.
+  """
+  def verify_api_token_query(plaintext_token) do
+    case Base.url_decode64(plaintext_token, padding: false) do
+      {:ok, raw} ->
+        hashed = :crypto.hash(@hash_algorithm, raw)
+
+        query =
+          from token in __MODULE__,
+            join: user in assoc(token, :user),
+            where:
+              token.token == ^hashed and
+                token.context == "api" and
+                token.inserted_at > ago(@api_token_validity_in_days, "day"),
+            select: user
+
+        {:ok, query}
+
+      :error ->
+        :error
+    end
+  end
+
+  @doc "Query that finds the API token row by plaintext (used to delete on logout)."
+  def by_api_token_query(plaintext_token) do
+    case Base.url_decode64(plaintext_token, padding: false) do
+      {:ok, raw} ->
+        hashed = :crypto.hash(@hash_algorithm, raw)
+
+        query =
+          from(token in __MODULE__,
+            where: token.token == ^hashed and token.context == "api"
+          )
+
+        {:ok, query}
+
+      :error ->
+        :error
+    end
+  end
 end

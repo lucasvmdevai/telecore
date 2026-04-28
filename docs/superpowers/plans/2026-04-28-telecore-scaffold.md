@@ -669,10 +669,21 @@ Note the existing functions and the rand/hash helpers (typically `:crypto.strong
 
 > If the generated `UserToken` already imports `Ecto.Query`, the `from` macro is available. If not, add `import Ecto.Query, only: [from: 2]` at the top of the module (next to existing imports).
 
-### Task 5.2: Extend `Telecore.Accounts` with API token functions
+### Task 5.2: Extend `Telecore.Accounts` with API token + password-aware registration
 
 **Files:**
 - Modify: `~/projects/telecore/lib/telecore/accounts.ex`
+
+> **Correction (added 2026-04-28 after first review):** Phoenix 1.8's
+> `phx.gen.auth` defaults to magic-link login, so the generated
+> `register_user/1` only sets `:email`. The JSON API accepts email+password
+> together, so a sibling `register_user_with_password/1` is added that
+> chains `User.email_changeset/2` and `User.password_changeset/3` into a
+> single insert. Without it, `POST /api/v1/users` would silently issue a
+> token to an account with no password and the subsequent login would 401.
+> The `UserController.create/2` (Task 5.9) calls this function instead of
+> `register_user/1`. The corresponding test in 5.10 must assert that the
+> just-registered credentials can log in via `POST /api/v1/sessions`.
 
 - [ ] **Step 1: Read the existing context to find a good insertion point (typically near other token-related functions).**
 

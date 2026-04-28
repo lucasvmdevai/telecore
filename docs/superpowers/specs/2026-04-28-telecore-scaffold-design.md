@@ -49,8 +49,9 @@ A meta deste documento é descrever o **scaffold inicial** — sem regras de dom
 **Regra invariante:** toda lógica de negócio mora nos *contexts* (`Telecore.Accounts`, etc). Tanto o LiveView quanto o controller JSON chamam as **mesmas funções de context** — nenhuma regra duplicada, nenhuma regra dentro de controller/LiveView. Quando o React substituir o LiveView, os contexts ficam intactos.
 
 **Estratégia de auth dupla:**
-- Caminho web (LiveView/HTML): sessão por cookie, gerada pelos fluxos padrão do `phx.gen.auth`.
+- Caminho web (LiveView/HTML): sessão por cookie, gerada pelos fluxos padrão do `phx.gen.auth` (magic link em 1.8).
 - Caminho API (`/api/v1`): token Bearer no header `Authorization`. O token é emitido por `POST /api/v1/sessions` e armazenado/validado via o schema `UserToken` que o `phx.gen.auth` já cria — adiciona-se um contexto `"api"` à lista de contextos suportados pelo schema.
+- O context `Telecore.Accounts` expõe `register_user_with_password/1` (criada nesse scaffold) que compõe `User.email_changeset/2` + `User.password_changeset/3` num único insert. O `register_user/1` original (só email, usado pela LiveView de magic link) fica intacto.
 - Ambos os caminhos compartilham `Telecore.Accounts.get_user_by_email_and_password/2`.
 
 ## Ambiente e versões

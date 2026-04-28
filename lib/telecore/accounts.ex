@@ -294,4 +294,54 @@ defmodule Telecore.Accounts do
       end
     end)
   end
+
+  @doc """
+  Registers a user with both email and password in a single insert.
+
+  Used by the JSON API where the client sends both fields together. The
+  default `register_user/1` only accepts `:email` because the LiveView UI
+  uses magic links. Validation errors from either field appear in the
+  same changeset response.
+  """
+  def register_user_with_password(attrs) do
+    %User{}
+    |> User.email_changeset(attrs)
+    |> User.password_changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Creates and persists a new API Bearer token for the given user.
+
+  Returns the plaintext token (shown to the client exactly once).
+  """
+  def create_user_api_token(%User{} = user) do
+    {token, user_token} = UserToken.build_api_token(user)
+    Repo.insert!(user_token)
+    token
+  end
+
+  @doc """
+  Looks up the user owning the given plaintext API token.
+
+  Returns the user struct or `nil` if the token is invalid or expired.
+  """
+  def fetch_user_by_api_token(plaintext_token) when is_binary(plaintext_token) do
+    case UserToken.verify_api_token_query(plaintext_token) do
+      {:ok, query} -> Repo.one(query)
+      :error -> nil
+    end
+  end
+
+  def fetch_user_by_api_token(_), do: nil
+
+  @doc "Revokes (deletes) an API token, used for logout."
+  def delete_user_api_token(plaintext_token) when is_binary(plaintext_token) do
+    case UserToken.by_api_token_query(plaintext_token) do
+      {:ok, query} -> Repo.delete_all(query)
+      :error -> {0, nil}
+    end
+  end
+
+  def delete_user_api_token(_), do: {0, nil}
 end

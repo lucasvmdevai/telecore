@@ -394,4 +394,70 @@ defmodule Telecore.AccountsTest do
       refute inspect(%User{password: "123456"}) =~ "password: \"123456\""
     end
   end
+
+  describe "API tokens" do
+    setup do
+      user = Telecore.AccountsFixtures.user_fixture()
+      %{user: user}
+    end
+
+    test "create_user_api_token/1 returns a plaintext token bound to the user", %{user: user} do
+      token = Accounts.create_user_api_token(user)
+
+      # Base64URL of 32 random bytes (unpadded) is exactly 43 chars.
+      assert token =~ ~r/^[A-Za-z0-9_\-]{43}$/
+
+      assert %Telecore.Accounts.User{id: id} = Accounts.fetch_user_by_api_token(token)
+      assert id == user.id
+    end
+
+    test "fetch_user_by_api_token/1 returns nil for garbage input" do
+      assert is_nil(Accounts.fetch_user_by_api_token("not-a-token"))
+      assert is_nil(Accounts.fetch_user_by_api_token(""))
+    end
+
+    test "delete_user_api_token/1 invalidates the token", %{user: user} do
+      token = Accounts.create_user_api_token(user)
+      assert %Telecore.Accounts.User{} = Accounts.fetch_user_by_api_token(token)
+
+      Accounts.delete_user_api_token(token)
+      assert is_nil(Accounts.fetch_user_by_api_token(token))
+    end
+
+    test "delete_user_api_token/1 is a no-op for non-binary input" do
+      assert Accounts.delete_user_api_token(nil) == {0, nil}
+      assert Accounts.delete_user_api_token(123) == {0, nil}
+    end
+  end
+
+  describe "register_user_with_password/1" do
+    test "persists email and password together; user can log in afterwards" do
+      attrs = %{
+        "email" => Telecore.AccountsFixtures.unique_user_email(),
+        "password" => Telecore.AccountsFixtures.valid_user_password()
+      }
+
+      assert {:ok, user} = Accounts.register_user_with_password(attrs)
+      assert user.email == attrs["email"]
+
+      assert %Telecore.Accounts.User{id: id} =
+               Accounts.get_user_by_email_and_password(attrs["email"], attrs["password"])
+
+      assert id == user.id
+    end
+
+    test "returns a changeset error when password is missing" do
+      attrs = %{"email" => Telecore.AccountsFixtures.unique_user_email()}
+      assert {:error, %Ecto.Changeset{} = changeset} = Accounts.register_user_with_password(attrs)
+      assert "can't be blank" in errors_on(changeset)[:password]
+    end
+
+    test "returns combined changeset errors when email and password are both invalid" do
+      attrs = %{"email" => "bad", "password" => "x"}
+      assert {:error, %Ecto.Changeset{} = changeset} = Accounts.register_user_with_password(attrs)
+      errors = errors_on(changeset)
+      assert errors[:email]
+      assert errors[:password]
+    end
+  end
 end
