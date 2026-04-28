@@ -36,5 +36,6 @@ npm-debug.log
 /assets/node_modules/
 
 
-# Claude Code local config
-.claude/
+# Claude Code local-only config (project-shared `.claude/skills/`, `.claude/commands/`,
+# and `.claude/settings.json` ARE committed; only the personal overrides are ignored).
+.claude/settings.local.json
